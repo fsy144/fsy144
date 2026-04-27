@@ -9,249 +9,47 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
         }
 
         body {
-            background-color: #ffffff;
-            padding-top: 80px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            width: 100%;
             min-height: 100vh;
-            overflow-x: hidden;
+            background-color: #f5f5f5; /* 电脑端背景色，衬托图片 */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
         }
 
-        .site-header {
+        .image-wrapper {
             width: 100%;
+            max-width: 500px; /* 电脑端最大宽度，模拟手机宽度 */
             background-color: #ffffff;
-            border-bottom: 1px solid #e8e8e8;
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: 1000;
-            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
+            box-shadow: 0 0 20px rgba(0,0,0,0.05); /* 电脑端轻微阴影，更有质感 */
         }
 
-        .header-container {
-            max-width: 1200px;
+        .fullscreen-image {
             width: 100%;
-            height: 80px;
-            margin: 0 auto;
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            padding: 0 20px;
-        }
-
-        .logo-wrapper {
-            display: flex;
-            align-items: center;
-            position: relative;
-            left: 240px;
-            margin-right: 80px;
-        }
-
-        .logo-img {
-            height: 100px;
-            cursor: pointer;
-            object-fit: contain;
-            transition: opacity 0.2s;
-        }
-
-        .logo-img:hover {
-            opacity: 0.9;
-        }
-
-        .nav-menu {
-            display: flex;
-            align-items: center;
-            gap: 35px;
-        }
-
-        .nav-link {
-            text-decoration: none;
-            font-size: 15px;
-            font-weight: 400;
-            color: #333333;
-            transition: color 0.2s;
-            line-height: 80px;
-            display: inline-block;
-            height: 80px;
-        }
-
-        .nav-link:hover {
-            color: #007bff;
-        }
-
-        .brand-hero {
-            position: relative;
-            width: 100%;
-            aspect-ratio: 16 / 5;
-            background: linear-gradient(105deg, #1a2a3a 0%, #2c4c5e 100%);
-            overflow: hidden;
-        }
-
-        .hero-image {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            object-position: center 35%;
+            height: auto;
             display: block;
+            object-fit: contain;
         }
 
-        .hero-caption {
-            position: absolute;
-            left: max(20px, calc((100% - 1200px) / 2 + 20px));
-            bottom: 24px;
-            color: white;
-            font-size: 1.5rem;
-            font-weight: 500;
-            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
-            background: transparent;
-            padding: 0;
-            border-radius: 0;
-            pointer-events: none;
-            z-index: 2;
-            white-space: nowrap;
-            letter-spacing: 0.5px;
-            line-height: 1.3;
-        }
-
-        @media (min-width: 1240px) {
-            .hero-caption {
-                left: calc((100% - 1200px) / 2 + 20px);
-            }
-        }
-
-        @media (max-width: 1239px) {
-            .hero-caption {
-                left: 30px;
-            }
-        }
-
-        .result-box {
-            border: 2px solid #ffc107;
-            padding: 40px;
-            border-radius: 20px;
-            background-color: #fff3cd;
-            text-align: center;
-            width: 380px;
-            margin: 40px auto 60px;
-        }
-
-        h1 {
-            color: #856404;
-            font-size: 24px;
-            margin-bottom: 20px;
-        }
-
-        p {
-            margin: 10px 0;
-            color: #333;
-        }
-
-        @media (max-width: 768px) {
+        /* 手机端优化 */
+        @media (max-width: 500px) {
             body {
-                padding-top: 60px;
+                background-color: #ffffff; /* 手机端背景和图片一致，无缝衔接 */
             }
-
-            .header-container {
-                height: 60px;
-                padding: 0 15px;
-                justify-content: center;
-            }
-
-            .logo-img {
-                height: 30px;
-            }
-
-            .logo-wrapper {
-                left: 0;
-                margin-right: 0;
-            }
-
-            .nav-menu {
-                display: none;
-            }
-
-            .brand-hero {
-                aspect-ratio: 16 / 6;
-            }
-
-            .hero-caption {
-                left: 16px;
-                bottom: 12px;
-                font-size: 1rem;
-                text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
-            }
-
-            .result-box {
-                width: 90%;
-                padding: 30px 20px;
-            }
-        }
-
-        @media (min-width: 1600px) {
-            .hero-caption {
-                left: calc((100% - 1400px) / 2 + 30px);
-                font-size: 1.8rem;
-                bottom: 36px;
+            .image-wrapper {
+                box-shadow: none; /* 手机端去掉阴影 */
             }
         }
     </style>
 </head>
 <body>
-
-<header class="site-header">
-    <div class="header-container">
-        <div class="logo-wrapper">
-            <a href="https://pharmanewzealand.com.cn" target="_blank" rel="noopener noreferrer">
-                <img src="https://s41.ax1x.com/2026/04/21/pegbnUO.jpg" alt="Pharma New Zealand" class="logo-img">
-            </a>
-        </div>
-
-        <nav class="nav-menu">
-            <a href="https://pharmanewzealand.com" target="_blank" rel="noopener noreferrer" class="nav-link">
-                {% if language == 'zh' %}首页{% else %}Home{% endif %}
-            </a>
-            <a href="https://pharmanewzealand.com/products" target="_blank" rel="noopener noreferrer" class="nav-link">
-                {% if language == 'zh' %}产品{% else %}Products{% endif %}
-            </a>
-            <a href="https://pharmanewzealand.com/insights" target="_blank" rel="noopener noreferrer" class="nav-link">
-                {% if language == 'zh' %}见解{% else %}Insights{% endif %}
-            </a>
-            <a href="https://pharmanewzealand.com/about" target="_blank" rel="noopener noreferrer" class="nav-link">
-                {% if language == 'zh' %}关于{% else %}About{% endif %}
-            </a>
-            <a href="https://pharmanewzealand.com/contact" target="_blank" rel="noopener noreferrer" class="nav-link">
-                {% if language == 'zh' %}联系方式{% else %}Contact{% endif %}
-            </a>
-        </nav>
+    <div class="image-wrapper">
+        <img src="/static/images/warning.jpg"
+             alt="This code has already been scanned"
+             class="fullscreen-image">
     </div>
-</header>
-
-<div class="brand-hero">
-    <img class="hero-image"
-         src="https://pharmanewzealand.co.nz/wp-content/uploads/2023/08/AdobeStock_406923050.webp"
-         alt="Pharma New Zealand brand visual">
-    <div class="hero-caption">Our Science Your Health</div>
-</div>
-
-<div class="result-box">
-    <h1>{% if language == 'zh' %}⚠️ 多次查询警告{% else %}⚠️ Multiple Query Warning{% endif %}</h1>
-    <p>{% if language == 'zh' %}该编号已被查询过 <strong>{{ scan_count }}</strong> 次。{% else %}This code has been queried <strong>{{ scan_count }}</strong> times.{% endif %}</p>
-    <p>{% if language == 'zh' %}产品编号：{% else %}Product Code: {% endif %}<strong>{{ serial_no }}</strong></p>
-
-    {% if platform %}
-        <p>{% if language == 'zh' %}购买平台：{% else %}Purchased from: {% endif %}<strong>{{ platform }}</strong></p>
-    {% endif %}
-
-    <p>{% if language == 'zh' %}若您是首次查询，请谨防假冒！{% else %}If this is your first time querying, please beware of counterfeits!{% endif %}</p>
-</div>
-
 </body>
 </html>

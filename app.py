@@ -6,6 +6,11 @@ import requests
 app = Flask(__name__)
 app.secret_key = 'PNZ@AntiFake#2026$Secure!Key'
 
+# --- 配置项 ---
+DOMESTIC_SITE = "https://pharmanewzealand.com.cn"
+OVERSEAS_SITE = "https://pharmanewzealand.co.nz"
+VERIFY_DOMAIN = "https://pharmanewzealand.com"  # 防伪核验专用域名
+
 
 # --- 数据库辅助函数 ---
 def get_db_connection():
@@ -93,7 +98,7 @@ def index():
     return "PharmaNewZealand防伪系统运行中。请通过带参数的链接访问。"
 
 
-# 【核心分流入口】
+# 【核心入口：二维码扫码链接】
 @app.route('/verify')
 def verify_start():
     qr_id = request.args.get('qr_id')
@@ -106,11 +111,13 @@ def verify_start():
     # 自动判定语言：国内=中文，境外=英文，查询失败默认中文
     language = 'zh' if (is_china is None or is_china) else 'en'
 
-    # --- 国内或查询失败：走原有流程 ---
+    # --- 国内或查询失败：跳转到国内官网，走选平台流程 ---
     if is_china is None or is_china:
+        # 跳转到国内官网，同时把qr_id带过去，或者直接跳转到核验域名的选平台页面
+        # 这里我们直接跳转到核验域名的选平台页面，确保流程连贯
         return render_template('select_platform.html', qr_id=qr_id, language=language)
 
-    # --- 境外：走快速核验通道 ---
+    # --- 境外：直接核验，不选平台，显示结果 ---
     else:
         status, data = check_qr_status(qr_id)
         log_scan(qr_id, user_ip, platform="境外用户")
@@ -124,7 +131,7 @@ def verify_start():
             return render_template('success.html', serial_no=data['serial_no'], scan_count=data['count'] + 1, is_overseas=True, language=language)
 
 
-# 【仅国内使用】
+# 【仅国内使用：选平台后提交】
 @app.route('/result', methods=['POST'])
 def show_result():
     qr_id = request.form.get('qr_id')
