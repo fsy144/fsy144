@@ -36,7 +36,7 @@ def check_qr_status(qr_id):
     serial_no = record['serial_no']
     conn.close()
 
-    if current_count >= 2:
+    if current_count >= 3:
         return ('warning', {'serial_no': serial_no, 'count': current_count})
     else:
         return ('success', {'serial_no': serial_no, 'count': current_count})
