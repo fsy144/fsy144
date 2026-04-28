@@ -42,9 +42,8 @@
             margin: 0 auto;
             display: flex;
             align-items: center;
-            justify-content: flex-start;
+            justify-content: space-between;  /* 改为 space-between，让汉堡按钮靠右 */
             padding: 0 20px;
-            gap: 30px;
         }
 
         .logo-wrapper {
@@ -63,6 +62,7 @@
             opacity: 0.9;
         }
 
+        /* PC 导航菜单 */
         .nav-menu {
             display: flex;
             align-items: center;
@@ -82,6 +82,83 @@
 
         .nav-link:hover {
             color: #007bff;
+        }
+
+        /* 汉堡菜单按钮（默认隐藏） */
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            justify-content: space-between;
+            width: 28px;
+            height: 22px;
+            cursor: pointer;
+            background: transparent;
+            border: none;
+            padding: 0;
+            z-index: 1002;
+        }
+
+        .hamburger span {
+            display: block;
+            width: 100%;
+            height: 2.5px;
+            background-color: #333;
+            border-radius: 2px;
+            transition: all 0.25s ease;
+        }
+
+        /* 汉堡动画：打开时变成 X */
+        .hamburger.active span:nth-child(1) {
+            transform: translateY(9.5px) rotate(45deg);
+        }
+        .hamburger.active span:nth-child(2) {
+            opacity: 0;
+        }
+        .hamburger.active span:nth-child(3) {
+            transform: translateY(-9.5px) rotate(-45deg);
+        }
+
+        /* 移动端导航面板（滑出） */
+        .mobile-nav-overlay {
+            position: fixed;
+            top: 80px;
+            left: 0;
+            width: 100%;
+            background-color: #ffffff;
+            z-index: 999;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+            transform: translateY(-120%);
+            transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            border-bottom: 1px solid #e8e8e8;
+            visibility: hidden;
+        }
+
+        .mobile-nav-overlay.open {
+            transform: translateY(0);
+            visibility: visible;
+        }
+
+        .mobile-nav-list {
+            display: flex;
+            flex-direction: column;
+            padding: 16px 24px;
+            gap: 12px;
+        }
+
+        .mobile-nav-link {
+            display: block;
+            padding: 12px 0;
+            font-size: 18px;
+            font-weight: 500;
+            color: #1f2d3d;
+            text-decoration: none;
+            border-bottom: 1px solid #f0f0f0;
+            transition: color 0.2s, padding-left 0.2s;
+        }
+
+        .mobile-nav-link:active {
+            color: #007bff;
+            padding-left: 8px;
         }
 
         /* ========== 全幅品牌视觉区 ========== */
@@ -227,7 +304,7 @@
             text-align: left;
         }
 
-        /* ========== 移动端响应式【修复版】 ========== */
+        /* ========== 移动端响应式 ========== */
         @media (max-width: 768px) {
             body {
                 padding-top: 60px;
@@ -236,23 +313,25 @@
             .header-container {
                 height: 60px;
                 padding: 0 15px;
-                justify-content: center;
-                gap: 0;
             }
 
             .logo-img {
-                height: 30px;
+                height: 42px;
             }
 
-            /* 移除了冲突的left属性，让logo居中显示 */
-            .logo-wrapper {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-
+            /* 隐藏 PC 导航 */
             .nav-menu {
                 display: none;
+            }
+
+            /* 显示汉堡按钮 */
+            .hamburger {
+                display: flex;
+            }
+
+            /* 移动端面板位置修正 */
+            .mobile-nav-overlay {
+                top: 60px;
             }
 
             .brand-hero {
@@ -284,6 +363,11 @@
                 bottom: 36px;
             }
         }
+
+        /* 辅助类：防止body滚动穿透（菜单打开时） */
+        body.menu-open {
+            overflow: hidden;
+        }
     </style>
 </head>
 <body>
@@ -295,6 +379,7 @@
                     <img src="/static/images/logo.png" alt="Pharma New Zealand" class="logo-img">
                 </a>
             </div>
+            <!-- PC 导航 -->
             <nav class="nav-menu">
                 <a href="https://pharmanewzealand.com.cn/" target="_blank" rel="noopener noreferrer" class="nav-link">
                     {% if language == 'zh' %}首页{% else %}Home{% endif %}
@@ -312,6 +397,33 @@
                     {% if language == 'zh' %}商店{% else %}About{% endif %}
                 </a>
             </nav>
+            <!-- 汉堡菜单按钮 -->
+            <button class="hamburger" id="hamburgerBtn" aria-label="菜单">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+
+        <!-- 移动端下拉导航面板 -->
+        <div class="mobile-nav-overlay" id="mobileNavOverlay">
+            <div class="mobile-nav-list">
+                <a href="https://pharmanewzealand.com.cn/" target="_blank" rel="noopener noreferrer" class="mobile-nav-link">
+                    {% if language == 'zh' %}🏠 首页{% else %}🏠 Home{% endif %}
+                </a>
+                <a href="https://pharmanewzealand.com.cn/about-us/" target="_blank" rel="noopener noreferrer" class="mobile-nav-link">
+                    {% if language == 'zh' %}✨ 我们的品牌{% else %}✨ Our Brand{% endif %}
+                </a>
+                <a href="https://pharmanewzealand.com.cn/products/" target="_blank" rel="noopener noreferrer" class="mobile-nav-link">
+                    {% if language == 'zh' %}📦 产品{% else %}📦 Products{% endif %}
+                </a>
+                <a href="https://pharmanewzealand.com.cn/blog/" target="_blank" rel="noopener noreferrer" class="mobile-nav-link">
+                    {% if language == 'zh' %}💡 见解{% else %}💡 Insights{% endif %}
+                </a>
+                <a href="https://pnzinternational.co.nz/" target="_blank" rel="noopener noreferrer" class="mobile-nav-link">
+                    {% if language == 'zh' %}🛒 商店{% else %}🛒 Shop{% endif %}
+                </a>
+            </div>
         </div>
     </header>
 
@@ -348,5 +460,71 @@
             <button type="submit">{% if language == 'zh' %}立即核验{% else %}Verify Now{% endif %}</button>
         </form>
     </div>
+
+    <script>
+        (function() {
+            const hamburger = document.getElementById('hamburgerBtn');
+            const mobileOverlay = document.getElementById('mobileNavOverlay');
+            const body = document.body;
+
+            // 打开/关闭菜单
+            function toggleMenu() {
+                const isOpen = mobileOverlay.classList.contains('open');
+                if (isOpen) {
+                    mobileOverlay.classList.remove('open');
+                    hamburger.classList.remove('active');
+                    body.classList.remove('menu-open');
+                } else {
+                    mobileOverlay.classList.add('open');
+                    hamburger.classList.add('active');
+                    body.classList.add('menu-open');
+                }
+            }
+
+            // 关闭菜单（如果打开的话）
+            function closeMenu() {
+                if (mobileOverlay.classList.contains('open')) {
+                    mobileOverlay.classList.remove('open');
+                    hamburger.classList.remove('active');
+                    body.classList.remove('menu-open');
+                }
+            }
+
+            // 汉堡按钮点击事件
+            hamburger.addEventListener('click', function(e) {
+                e.stopPropagation();
+                toggleMenu();
+            });
+
+            // 点击移动端导航内的链接后，关闭菜单
+            const mobileLinks = document.querySelectorAll('.mobile-nav-link');
+            mobileLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    closeMenu();
+                });
+            });
+
+            // 点击页面其他区域（非汉堡、非面板）关闭菜单
+            document.addEventListener('click', function(e) {
+                if (!mobileOverlay.classList.contains('open')) return;
+                if (hamburger.contains(e.target) || mobileOverlay.contains(e.target)) return;
+                closeMenu();
+            });
+
+            // 窗口尺寸变化：如果变成桌面宽度（>768px）且菜单是打开状态 --> 关闭菜单
+            let resizeTimer;
+            window.addEventListener('resize', function() {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(function() {
+                    if (window.innerWidth > 768 && mobileOverlay.classList.contains('open')) {
+                        closeMenu();
+                    }
+                }, 150);
+            });
+
+            // 确保初始化时菜单完全关闭（防止意外）
+            closeMenu();
+        })();
+    </script>
 </body>
 </html>
