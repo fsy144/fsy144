@@ -44,18 +44,15 @@
             align-items: center;
             justify-content: flex-start;
             padding: 0 20px;
-            gap: 30px; /* 给logo和导航栏之间留间距 */
+            gap: 30px;
         }
 
-        /* 【修改点1】logo容器：移除原来的left偏移，缩小logo尺寸 */
         .logo-wrapper {
             display: flex;
             align-items: center;
-            /* 去掉了left:240px，让logo自然靠左 */
         }
 
         .logo-img {
-            /* 【修改点2】logo缩小20px：原来100px，现在80px */
             height: 80px;
             cursor: pointer;
             object-fit: contain;
@@ -66,7 +63,6 @@
             opacity: 0.9;
         }
 
-        /* 【修改点3】导航栏样式 */
         .nav-menu {
             display: flex;
             align-items: center;
@@ -231,7 +227,7 @@
             text-align: left;
         }
 
-        /* ========== 移动端响应式 ========== */
+        /* ========== 移动端响应式【修复版】 ========== */
         @media (max-width: 768px) {
             body {
                 padding-top: 60px;
@@ -248,8 +244,11 @@
                 height: 30px;
             }
 
+            /* 移除了冲突的left属性，让logo居中显示 */
             .logo-wrapper {
-                left: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
 
             .nav-menu {
@@ -312,7 +311,6 @@
                 <a href="https://pnzinternational.co.nz/" target="_blank" rel="noopener noreferrer" class="nav-link">
                     {% if language == 'zh' %}商店{% else %}About{% endif %}
                 </a>
-
             </nav>
         </div>
     </header>
