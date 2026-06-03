@@ -3,11 +3,15 @@ import uuid
 import os
 import qrcode
 from PIL import Image, ImageDraw, ImageFont
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, Border, Side
+from datetime import datetime
 
 # 配置（修改为官网首页）
 DOMAIN = "https://pharmanewzealand.com.cn"  # 改为.cn的官网
 QR_SAVE_PATH = "static/qr_codes"
 LOGO_PATH = "static/images/logo.jpg"
+EXCEL_SAVE_PATH = "."  # Excel文件保存到当前文件夹
 
 # 图片尺寸配置
 CANVAS_WIDTH = 750
@@ -121,21 +125,97 @@ def insert_into_db(qr_id, serial_no):
         conn.close()
 
 
-def main(num_to_generate=5):
+def create_excel_workbook():
+    """创建并初始化Excel工作簿"""
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "防伪码生成记录"
+
+    # 设置表头
+    headers = ["序号", "防伪编号", "QR ID", "验证链接", "生成时间"]
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_num, value=header)
+        cell.font = Font(bold=True, size=12)
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+
+    # 设置列宽
+    ws.column_dimensions['A'].width = 10
+    ws.column_dimensions['B'].width = 15
+    ws.column_dimensions['C'].width = 40
+    ws.column_dimensions['D'].width = 80
+    ws.column_dimensions['E'].width = 20
+
+    return wb, ws
+
+
+def add_record_to_excel(ws, row_num, serial_no, qr_id, url, generate_time):
+    """向Excel添加一条记录"""
+    data = [row_num - 1, serial_no, qr_id, url, generate_time]
+    for col_num, value in enumerate(data, 1):
+        cell = ws.cell(row=row_num, column=col_num, value=value)
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+
+
+def main(num_to_generate=2500):
     print(f"开始生成 {num_to_generate} 个防伪码...")
+
+    # 创建Excel工作簿
+    wb, ws = create_excel_workbook()
+    current_row = 2  # 从第2行开始写入数据（第1行是表头）
+
+    # 获取当前时间作为Excel文件名
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    excel_filename = f"防伪码生成记录_{timestamp}.xlsx"
+    excel_full_path = os.path.join(EXCEL_SAVE_PATH, excel_filename)
+
+    success_count = 0
+    fail_count = 0
+
     for i in range(num_to_generate):
         qr_id = str(uuid.uuid4())
         serial_no = get_next_serial_no()
+        generate_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         if insert_into_db(qr_id, serial_no):
-            # 【核心修改】链接格式变为：官网首页#qr_id=xxx
             url = f"{DOMAIN}#qr_id={qr_id}"
             filename = f"QR_{serial_no}.png"
             create_branded_qr_code(url, serial_no, filename)
+
+            # 添加到Excel
+            add_record_to_excel(ws, current_row, serial_no, qr_id, url, generate_time)
+            current_row += 1
+            success_count += 1
+
             print(f"[成功] 编号: {serial_no} | 链接: {url}")
         else:
+            fail_count += 1
             print(f"[失败] 编号重复，跳过: {serial_no}")
+
+    # 保存Excel文件
+    wb.save(excel_full_path)
+
+    # 打印统计信息
+    print("\n" + "=" * 50)
+    print(f"生成完成！")
+    print(f"成功生成: {success_count} 个")
+    print(f"失败跳过: {fail_count} 个")
+    print(f"Excel记录已保存至: {os.path.abspath(excel_full_path)}")
+    print("=" * 50)
 
 
 if __name__ == "__main__":
-    main(3)
+    # 首先安装依赖
+    # pip install openpyxl pillow qrcode
+    main(2500)
