@@ -190,8 +190,8 @@ def main(num_to_generate=2500):
 
         if insert_into_db(qr_id, serial_no):
             url = f"{DOMAIN}#qr_id={qr_id}"
-            filename = f"QR_{serial_no}.png"
-            create_branded_qr_code(url, serial_no, filename)
+            # filename = f"QR_{serial_no}.png"
+            # create_branded_qr_code(url, serial_no, filename)
 
             # 添加到Excel
             add_record_to_excel(ws, current_row, serial_no, qr_id, url, generate_time)
@@ -217,4 +217,4 @@ def main(num_to_generate=2500):
 
 if __name__ == "__main__":
     # pip install openpyxl pillow qrcode
-    main(40000)
+    main(52000)
