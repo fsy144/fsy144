@@ -217,4 +217,4 @@ def main(num_to_generate=2500):
 
 if __name__ == "__main__":
     # pip install openpyxl pillow qrcode
-    main(22000)
+    main(16,000)
