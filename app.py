@@ -68,14 +68,16 @@ def log_scan(qr_id, ip_address, platform="境外用户_无平台"):
 def is_china_ip(ip):
     """
     判断IP是否在中国境内
-    使用免费的 ip-api.com 接口
+    使用 ip.cn 接口（国内访问稳定，国内IP识别准确）
     返回: True(国内) / False(境外) / None(查询失败)
     """
     try:
-        response = requests.get(f'http://ip-api.com/json/{ip}?fields=countryCode', timeout=5)
+        response = requests.get(f'https://www.ip.cn/api/index?ip={ip}&type=1', timeout=5)
         result = response.json()
-        if result.get('status') == 'success':
-            return result.get('countryCode') == 'CN'
+        if result.get('code') == 0:
+            address = result.get('address', '')
+            # 国内IP地址以"中国"开头，如"中国 北京 北京"
+            return address.startswith('中国')
         else:
             return None
     except Exception as e:
