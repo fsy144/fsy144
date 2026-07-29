@@ -131,39 +131,35 @@ def index():
 @app.route('/verify')
 def verify_start():
     qr_id = request.args.get('qr_id')
-    user_ip = get_user_ip()
+    user_ip = get_user_ip()  # 确保已修复为 return request.remote_addr
 
     if not qr_id:
         return render_template('failed.html', msg="缺少防伪编号，无法核验。", language='zh')
 
+    # === 关键修复：完全移除对 Referer 的依赖 ===
     is_china = is_china_ip(user_ip)
 
-    # --- 新增：处理IP查询失败的情况 ---
+    # 明确记录IP判断结果（用于调试）
+    print(f"[DEBUG] 用户IP: {user_ip} | is_china_ip 返回: {is_china}")
+
+    # 当IP查询失败时，强制进入国内流程（安全兜底）
     if is_china is None:
-        # 当无法判断IP归属地时，打印日志以便排查，并默认跳转到选平台页面
-        # 这是一种更安全的策略，避免因误判而阻止国内用户
-        print(f"警告：无法判断IP {user_ip} 的归属地，默认进入国内选平台流程。")
+        print(f"[WARNING] IP {user_ip} 无法判断归属地，默认进入国内流程")
         return render_template('select_platform.html', qr_id=qr_id, language='zh')
 
-    # --- 国内：跳转到国内官网，走选平台流程 ---
-    if is_china:
+    # === 严格按IP判断，不再受来源影响 ===
+    if is_china:  # 真正的国内用户
         return render_template('select_platform.html', qr_id=qr_id, language='zh')
-
-    # --- 境外：直接核验，不选平台，显示结果 ---
-    else:
+    else:  # 明确的境外用户
         status, data = check_qr_status(qr_id)
         log_scan(qr_id, user_ip, platform="境外用户")
-        language = 'en'  # 境外用户默认英文
-
-        if status == 'invalid':
-            return render_template('failed.html', msg="该产品编码不存在，谨防假冒！", is_overseas=True, language=language)
-        elif status == 'warning':
-            return render_template('warning.html', serial_no=data['serial_no'], scan_count=data['count'],
-                                   is_overseas=True, language=language)
-        else:
-            increment_scan_count(qr_id)
-            return render_template('success.html', serial_no=data['serial_no'], scan_count=data['count'] + 1,
-                                   is_overseas=True, language=language)
+        return render_template(
+            'success.html' if status == 'success' else ('warning.html' if status == 'warning' else 'failed.html'),
+            serial_no=data['serial_no'] if data else None,
+            scan_count=data['count'] if data else None,
+            is_overseas=True,
+            language='en'  # 境外用户强制英文
+        )
 
 
 # 【仅国内使用：选平台后提交】
