@@ -137,19 +137,23 @@ def verify_start():
         return render_template('failed.html', msg="缺少防伪编号，无法核验。", language='zh')
 
     is_china = is_china_ip(user_ip)
-    # 自动判定语言：国内=中文，境外/查询失败=英文
-    language = 'zh' if is_china else 'en'
+
+    # --- 新增：处理IP查询失败的情况 ---
+    if is_china is None:
+        # 当无法判断IP归属地时，打印日志以便排查，并默认跳转到选平台页面
+        # 这是一种更安全的策略，避免因误判而阻止国内用户
+        print(f"警告：无法判断IP {user_ip} 的归属地，默认进入国内选平台流程。")
+        return render_template('select_platform.html', qr_id=qr_id, language='zh')
 
     # --- 国内：跳转到国内官网，走选平台流程 ---
     if is_china:
-        # 跳转到国内官网，同时把qr_id带过去，或者直接跳转到核验域名的选平台页面
-        # 这里我们直接跳转到核验域名的选平台页面，确保流程连贯
-        return render_template('select_platform.html', qr_id=qr_id, language=language)
+        return render_template('select_platform.html', qr_id=qr_id, language='zh')
 
-    # --- 境外或查询失败：直接核验，不选平台，显示结果 ---
+    # --- 境外：直接核验，不选平台，显示结果 ---
     else:
         status, data = check_qr_status(qr_id)
         log_scan(qr_id, user_ip, platform="境外用户")
+        language = 'en'  # 境外用户默认英文
 
         if status == 'invalid':
             return render_template('failed.html', msg="该产品编码不存在，谨防假冒！", is_overseas=True, language=language)
