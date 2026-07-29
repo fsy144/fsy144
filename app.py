@@ -17,6 +17,7 @@ VERIFY_DOMAIN = "https://pharmanewzealand.com"  # 防伪核验专用域名
 XDB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ip2region.xdb')
 _ip_searcher = None
 
+
 def init_ip_searcher():
     """初始化IP离线查询器（应用启动时调用一次）"""
     global _ip_searcher
@@ -116,10 +117,7 @@ def is_china_ip(ip):
 
 # --- 获取用户真实IP ---
 def get_user_ip():
-    if request.headers.get('X-Forwarded-For'):
-        return request.headers.get('X-Forwarded-For').split(',')[0].strip()
-    else:
-        return request.remote_addr
+    return request.remote_addr
 
 
 # --- 路由 ---
@@ -156,10 +154,12 @@ def verify_start():
         if status == 'invalid':
             return render_template('failed.html', msg="该产品编码不存在，谨防假冒！", is_overseas=True, language=language)
         elif status == 'warning':
-            return render_template('warning.html', serial_no=data['serial_no'], scan_count=data['count'], is_overseas=True, language=language)
+            return render_template('warning.html', serial_no=data['serial_no'], scan_count=data['count'],
+                                   is_overseas=True, language=language)
         else:
             increment_scan_count(qr_id)
-            return render_template('success.html', serial_no=data['serial_no'], scan_count=data['count'] + 1, is_overseas=True, language=language)
+            return render_template('success.html', serial_no=data['serial_no'], scan_count=data['count'] + 1,
+                                   is_overseas=True, language=language)
 
 
 # 【仅国内使用：选平台后提交】
@@ -184,10 +184,12 @@ def show_result():
     if status == 'invalid':
         return render_template('failed.html', msg="该产品编码不存在，谨防假冒！", platform=platform, language=language)
     elif status == 'warning':
-        return render_template('warning.html', serial_no=data['serial_no'], scan_count=data['count'], platform=platform, language=language)
+        return render_template('warning.html', serial_no=data['serial_no'], scan_count=data['count'], platform=platform,
+                               language=language)
     else:
         increment_scan_count(qr_id)
-        return render_template('success.html', serial_no=data['serial_no'], scan_count=data['count'] + 1, platform=platform, language=language)
+        return render_template('success.html', serial_no=data['serial_no'], scan_count=data['count'] + 1,
+                               platform=platform, language=language)
 
 
 if __name__ == '__main__':
