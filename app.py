@@ -2,6 +2,8 @@ from flask import Flask, request, render_template, redirect, url_for
 import sqlite3
 import os
 import requests
+from ip2region.searcher import new_with_buffer
+from ip2region.util import IPv4, load_content_from_file
 
 app = Flask(__name__)
 app.secret_key = 'PNZ@AntiFake#2026$Secure!Key'
@@ -10,6 +12,25 @@ app.secret_key = 'PNZ@AntiFake#2026$Secure!Key'
 DOMESTIC_SITE = "https://pharmanewzealand.com.cn"
 OVERSEAS_SITE = "https://pharmanewzealand.co.nz"
 VERIFY_DOMAIN = "https://pharmanewzealand.com"  # 防伪核验专用域名
+
+# --- IP离线库初始化 ---
+XDB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ip2region.xdb')
+_ip_searcher = None
+
+def init_ip_searcher():
+    """初始化IP离线查询器（应用启动时调用一次）"""
+    global _ip_searcher
+    if os.path.exists(XDB_PATH):
+        try:
+            c_buffer = load_content_from_file(XDB_PATH)
+            _ip_searcher = new_with_buffer(IPv4, c_buffer)
+            print("IP离线库加载成功")
+        except Exception as e:
+            print(f"IP离线库加载失败: {e}")
+            _ip_searcher = None
+    else:
+        print(f"警告：未找到IP数据库文件 {XDB_PATH}，IP定位功能不可用")
+        _ip_searcher = None
 
 
 # --- 数据库辅助函数 ---
@@ -68,16 +89,24 @@ def log_scan(qr_id, ip_address, platform="境外用户_无平台"):
 def is_china_ip(ip):
     """
     判断IP是否在中国境内
-    使用 ip.cn 接口（国内访问稳定，国内IP识别准确）
+    使用 ip2region 离线库（本地查询，无需联网，速度极快）
+    返回格式：大洲|国家|省份|城市|区县|运营商|AS号
+    例如：亚洲|中国|江苏省|南京市|||
     返回: True(国内) / False(境外) / None(查询失败)
     """
+    if _ip_searcher is None:
+        return None
     try:
-        response = requests.get(f'https://www.ip.cn/api/index?ip={ip}&type=1', timeout=5)
-        result = response.json()
-        if result.get('code') == 0:
-            address = result.get('address', '')
-            # 国内IP地址以"中国"开头，如"中国 北京 北京"
-            return address.startswith('中国')
+        region = _ip_searcher.search(ip)
+        if region:
+            parts = region.split('|')
+            # 国家在第1段（索引1），不是第0段
+            country = parts[1] if len(parts) > 1 else ''
+            # 内网IP视为国内（部署在国内服务器上）
+            if country == '中国' or parts[0] == '内网IP':
+                return True
+            else:
+                return False
         else:
             return None
     except Exception as e:
@@ -165,4 +194,5 @@ if __name__ == '__main__':
     if not os.path.exists('database/anti_fake.db'):
         print("错误：未找到数据库，请先运行 db_init.py")
     else:
+        init_ip_searcher()
         app.run(debug=False, host='0.0.0.0', port=5000)
