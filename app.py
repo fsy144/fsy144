@@ -72,7 +72,7 @@ def is_china_ip(ip):
     返回: True(国内) / False(境外) / None(查询失败)
     """
     try:
-        response = requests.get(f'http://ip-api.com/json/{ip}?fields=countryCode', timeout=2)
+        response = requests.get(f'http://ip-api.com/json/{ip}?fields=countryCode', timeout=5)
         result = response.json()
         if result.get('status') == 'success':
             return result.get('countryCode') == 'CN'
@@ -108,16 +108,16 @@ def verify_start():
         return render_template('failed.html', msg="缺少防伪编号，无法核验。", language='zh')
 
     is_china = is_china_ip(user_ip)
-    # 自动判定语言：国内=中文，境外=英文，查询失败默认中文
-    language = 'zh' if (is_china is None or is_china) else 'en'
+    # 自动判定语言：国内=中文，境外/查询失败=英文
+    language = 'zh' if is_china else 'en'
 
-    # --- 国内或查询失败：跳转到国内官网，走选平台流程 ---
-    if is_china is None or is_china:
+    # --- 国内：跳转到国内官网，走选平台流程 ---
+    if is_china:
         # 跳转到国内官网，同时把qr_id带过去，或者直接跳转到核验域名的选平台页面
         # 这里我们直接跳转到核验域名的选平台页面，确保流程连贯
         return render_template('select_platform.html', qr_id=qr_id, language=language)
 
-    # --- 境外：直接核验，不选平台，显示结果 ---
+    # --- 境外或查询失败：直接核验，不选平台，显示结果 ---
     else:
         status, data = check_qr_status(qr_id)
         log_scan(qr_id, user_ip, platform="境外用户")
