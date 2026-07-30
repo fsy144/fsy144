@@ -14,7 +14,7 @@ OVERSEAS_SITE = "https://pharmanewzealand.co.nz"
 VERIFY_DOMAIN = "https://pharmanewzealand.com"  # 防伪核验专用域名
 
 # --- IP离线库初始化 ---
-XDB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ip2region.xdb')
+XDB_PATH = '/var/www/pharmanewzealand.com/ip2region.xdb'
 _ip_searcher = None
 logging.basicConfig(
     level=logging.INFO,
