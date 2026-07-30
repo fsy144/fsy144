@@ -144,8 +144,8 @@ def verify_start():
 
     # 当IP查询失败时，强制进入国内流程（安全兜底）
     if is_china is None:
-        print(f"[WARNING] IP {user_ip} 无法判断归属地，默认进入国内流程")
-        return render_template('select_platform.html', qr_id=qr_id, language='zh')
+        print(f"[WARNING] IP {user_ip} 无法判断归属地，默认进入境外流程")
+        is_china = False  # 关键修改：将查询失败的情况归为境外
 
     # === 严格按IP判断，不再受来源影响 ===
     if is_china:  # 真正的国内用户
