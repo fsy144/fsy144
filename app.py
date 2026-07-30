@@ -212,22 +212,26 @@ def show_result():
         increment_scan_count(qr_id)
         return render_template('success.html', serial_no=data['serial_no'], scan_count=data['count'] + 1,
                                platform=platform, language=language)
-@app.before_first_request
 def initialize_app():
     """
-    在每个工作进程处理第一个请求前调用。
-    确保每个工作进程都正确加载了IP数据库。
+    应用启动时初始化函数。
+    这个函数会在模块被导入时执行，确保每个工作进程都能正确加载资源。
     """
-    logging.info("工作进程启动，正在初始化应用...")
+    logging.info("🚀 正在初始化应用...")
     if not os.path.exists('database/anti_fake.db'):
-        logging.critical("错误：未找到数据库，请先运行 db_init.py")
-        # 这里不能直接退出进程，但后续请求会因数据库错误而失败
+        logging.critical("❌ 错误：未找到数据库文件 'database/anti_fake.db'，请先运行 db_init.py")
+        # 注意：这里不抛出异常，允许应用启动，但后续数据库操作会失败。
+        # 这是一种更宽容的启动策略。
     else:
         init_ip_searcher()
 
+# 在模块加载时立即执行初始化
+# 这能确保在 Flask 应用实例创建后、处理任何请求前，资源已准备就绪
+initialize_app()
+
 if __name__ == '__main__':
-    if not os.path.exists('database/anti_fake.db'):
-        print("错误：未找到数据库，请先运行 db_init.py")
-    else:
-        init_ip_searcher()
-        app.run(debug=False, host='0.0.0.0', port=5000)
+    # if not os.path.exists('database/anti_fake.db'):
+    #     print("错误：未找到数据库，请先运行 db_init.py")
+    # else:
+    #     init_ip_searcher()
+    app.run(debug=False, host='0.0.0.0', port=5000)
