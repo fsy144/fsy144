@@ -1,10 +1,12 @@
-from flask import Flask, request, render_template, redirect, url_for
+from flask import Flask, request, render_template, redirect, url_for, jsonify
 import sqlite3
 import os
 import logging
+from pathlib import Path
+from urllib.parse import urlencode
+from uuid import UUID
 from ip2region.searcher import new_with_buffer
 from ip2region.util import IPv4, load_content_from_file
-from flask import request, jsonify
 
 app = Flask(__name__)
 app.secret_key = 'PNZ@AntiFake#2026$Secure!Key'
@@ -15,7 +17,7 @@ OVERSEAS_SITE = "https://pharmanewzealand.co.nz"
 VERIFY_DOMAIN = "https://pharmanewzealand.com"  # 防伪核验专用域名
 
 # --- IP离线库初始化 ---
-XDB_PATH = '/var/www/pharmanewzealand.com/ip2region.xdb'
+XDB_PATH = os.environ.get('IP2REGION_XDB_PATH', str(Path(__file__).with_name('ip2region.xdb')))
 _ip_searcher = None
 logging.basicConfig(
     level=logging.INFO,
@@ -25,6 +27,38 @@ logging.basicConfig(
         logging.StreamHandler()
     ]
 )
+def valid_qr_id(qr_id):
+    try:
+        return str(UUID(qr_id)) if qr_id else None
+    except (ValueError, AttributeError, TypeError):
+        return None
+
+
+def verification_url(qr_id):
+    return f"{VERIFY_DOMAIN}/verify?{urlencode({'qr_id': qr_id})}"
+
+
+def domestic_landing_url(qr_id):
+    # Query string is intentional: URL fragments are never sent to the server.
+    return f"{DOMESTIC_SITE}/?{urlencode({'qr_id': qr_id})}"
+
+
+@app.route('/route', methods=['GET'])
+def route_qr():
+    """Single router for existing QR codes."""
+    qr_id = valid_qr_id(request.args.get('qr_id'))
+    if not qr_id:
+        return render_template('failed.html', msg="缺少或无效的防伪编号，无法核验。", language='zh'), 400
+
+    user_ip = get_user_ip()
+    china = is_china_ip(user_ip)
+    logging.info("QR route: qr_id=%s ip=%s is_china=%s", qr_id, user_ip, china)
+
+    # Geo lookup failure retains the original domestic flow.
+    target = domestic_landing_url(qr_id) if china is not False else verification_url(qr_id)
+    return redirect(target, code=302)
+
+
 @app.route('/check_redirect', methods=['GET'])
 def check_redirect():
     qr_id = request.args.get('qr_id')
@@ -56,7 +90,7 @@ def check_if_ip_is_china(ip):
     # from ip2region import Ip2Region
     # res = Ip2Region().memory_search(ip)
     # return '中国' in res['region']
-    pass
+    return is_china_ip(ip)
 def init_ip_searcher():
     """
     初始化IP离线查询器。
