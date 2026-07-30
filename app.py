@@ -4,6 +4,7 @@ import os
 import logging
 from ip2region.searcher import new_with_buffer
 from ip2region.util import IPv4, load_content_from_file
+from flask import request, jsonify
 
 app = Flask(__name__)
 app.secret_key = 'PNZ@AntiFake#2026$Secure!Key'
@@ -24,6 +25,38 @@ logging.basicConfig(
         logging.StreamHandler()
     ]
 )
+@app.route('/check_redirect', methods=['GET'])
+def check_redirect():
+    qr_id = request.args.get('qr_id')
+
+    # 1. 获取真实 IP (配合 Nginx 的 X-Forwarded-For)
+    # 这一步很关键，之前我们讨论过
+    real_ip = request.headers.get('X-Forwarded-For', request.remote_addr).split(',')[0].strip()
+
+    # 2. 简单的 IP 归属地判断逻辑
+    # 推荐使用 ip2region 库，或者简单的正则判断中国 IP 段
+    # 这里为了演示，写一个简单的伪代码逻辑：
+    is_china_ip = check_if_ip_is_china(real_ip)
+
+    # 3. 决策跳转逻辑
+    if is_china_ip:
+        # 如果是中国 IP，不需要跳转，留在 .com.cn
+        return jsonify({"redirect_url": None})
+    else:
+        # 如果是国外 IP，跳转到 .com 对应的验证页或首页
+        # 注意：这里最好带上 qr_id，以便 .com 网站也能显示验证结果
+        target_url = f"https://pharmanewzealand.com/verify?qr_id={qr_id}"
+        return jsonify({"redirect_url": target_url})
+
+
+# 这是一个辅助函数示例，实际建议使用 ip2region
+def check_if_ip_is_china(ip):
+    # 简单示例：如果 IP 以常见中国网段开头...
+    # 实际项目中请引入 ip2region.xdb 进行精准查询
+    # from ip2region import Ip2Region
+    # res = Ip2Region().memory_search(ip)
+    # return '中国' in res['region']
+    pass
 def init_ip_searcher():
     """
     初始化IP离线查询器。
