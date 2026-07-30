@@ -20,24 +20,38 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s %(levelname)s: %(message)s',
     handlers=[
-        logging.FileHandler('app.log', encoding='utf-8'), # 日志写入文件
-        logging.StreamHandler() # 日志也输出到控制台
+        logging.FileHandler('app.log', encoding='utf-8'),
+        logging.StreamHandler()
     ]
 )
 def init_ip_searcher():
-    """初始化IP离线查询器（应用启动时调用一次）"""
+    """
+    初始化IP离线查询器。
+    采用预加载内容的方式，以便在多进程环境中共享内存，提高效率和稳定性。
+    """
     global _ip_searcher
-    if os.path.exists(XDB_PATH):
-        try:
-            c_buffer = load_content_from_file(XDB_PATH)
-            _ip_searcher = new_with_buffer(IPv4, c_buffer)
-            logging.info("✅ IP离线库加载成功")
-        except Exception as e:
-            logging.error(f"❌ IP离线库加载失败: {e}") # <--- 修改这里
-            _ip_searcher = None
-    else:
-        logging.error(f"❌ 警告：未找到IP数据库文件 {XDB_PATH}，IP定位功能不可用")
-        _ip_searcher = None
+
+    # 1. 检查文件是否存在
+    if not os.path.exists(XDB_PATH):
+        logging.critical(f"❌ 致命错误：IP 数据库文件不存在 → {XDB_PATH}")
+        raise FileNotFoundError(f"IP database file not found: {XDB_PATH}")
+
+    try:
+        # 2. 预加载文件内容到内存 (关键修复)
+        # 这一步在主进程中执行，耗时较长，但只需执行一次
+        logging.info(f"🔄 正在预加载 IP 数据库到内存: {XDB_PATH}")
+        c_buffer = load_content_from_file(XDB_PATH)
+
+        # 3. 使用内存数据创建搜索器
+        # 工作进程 fork 后会共享这块内存，初始化速度极快
+        _ip_searcher = new_with_buffer(IPv4, c_buffer)
+
+        logging.info("✅ IP离线库加载成功，已准备好为所有工作进程提供服务")
+
+    except Exception as e:
+        logging.critical(f"❌ 致命错误：IP数据库加载失败 → {e}")
+        # 加载失败直接抛出异常，阻止服务启动，避免后续逻辑误判
+        raise
 
 
 # --- 数据库辅助函数 ---
@@ -139,7 +153,7 @@ def index():
 @app.route('/verify')
 def verify_start():
     qr_id = request.args.get('qr_id')
-    user_ip = get_user_ip()  # 确保已修复为 return request.remote_addr
+    user_ip = get_user_ip()
 
     if not qr_id:
         return render_template('failed.html', msg="缺少防伪编号，无法核验。", language='zh')
@@ -148,12 +162,12 @@ def verify_start():
     is_china = is_china_ip(user_ip)
 
     # 明确记录IP判断结果（用于调试）
-    print(f"[DEBUG] 用户IP: {user_ip} | is_china_ip 返回: {is_china}")
+    logging.info(f"[DEBUG] 用户IP: {user_ip} | is_china_ip 返回: {is_china}")
 
     # 当IP查询失败时，强制进入国内流程（安全兜底）
     if is_china is None:
-        print(f"[WARNING] IP {user_ip} 无法判断归属地，默认进入境外流程")
-        is_china = False  # 关键修改：将查询失败的情况归为境外
+        logging.warning(f"[WARNING] IP {user_ip} 无法判断归属地，默认进入国内流程（安全兜底）")
+        is_china = True  # 建议：查询失败时默认走国内流程，避免误伤国内用户
 
     # === 严格按IP判断，不再受来源影响 ===
     if is_china:  # 真正的国内用户
