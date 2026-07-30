@@ -139,6 +139,9 @@ def is_china_ip(ip):
 
 # --- 获取用户真实IP ---
 def get_user_ip():
+    xff = request.headers.get('X-Forwarded-For')
+    if xff:
+        return xff.split(',')[0].strip()
     return request.remote_addr
 
 
