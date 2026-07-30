@@ -43,7 +43,7 @@ def domestic_landing_url(qr_id):
     return f"{DOMESTIC_SITE}/?{urlencode({'qr_id': qr_id})}"
 
 
-@app.route('/route_qr', methods=['GET'])
+@app.route('/route', methods=['GET'])
 def route_qr():
     """Single router for existing QR codes."""
     qr_id = valid_qr_id(request.args.get('qr_id'))
