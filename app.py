@@ -1,7 +1,7 @@
 from flask import Flask, request, render_template, redirect, url_for
 import sqlite3
 import os
-import requests
+import logging
 from ip2region.searcher import new_with_buffer
 from ip2region.util import IPv4, load_content_from_file
 
@@ -16,8 +16,14 @@ VERIFY_DOMAIN = "https://pharmanewzealand.com"  # 防伪核验专用域名
 # --- IP离线库初始化 ---
 XDB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ip2region.xdb')
 _ip_searcher = None
-
-
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s %(levelname)s: %(message)s',
+    handlers=[
+        logging.FileHandler('app.log', encoding='utf-8'), # 日志写入文件
+        logging.StreamHandler() # 日志也输出到控制台
+    ]
+)
 def init_ip_searcher():
     """初始化IP离线查询器（应用启动时调用一次）"""
     global _ip_searcher
@@ -25,12 +31,12 @@ def init_ip_searcher():
         try:
             c_buffer = load_content_from_file(XDB_PATH)
             _ip_searcher = new_with_buffer(IPv4, c_buffer)
-            print("IP离线库加载成功")
+            logging.info("✅ IP离线库加载成功")
         except Exception as e:
-            print(f"IP离线库加载失败: {e}")
+            logging.error(f"❌ IP离线库加载失败: {e}") # <--- 修改这里
             _ip_searcher = None
     else:
-        print(f"警告：未找到IP数据库文件 {XDB_PATH}，IP定位功能不可用")
+        logging.error(f"❌ 警告：未找到IP数据库文件 {XDB_PATH}，IP定位功能不可用")
         _ip_searcher = None
 
 
@@ -96,6 +102,7 @@ def is_china_ip(ip):
     返回: True(国内) / False(境外) / None(查询失败)
     """
     if _ip_searcher is None:
+        logging.warning(f"⚠️ IP查询失败：IP查询器未初始化，可能数据库文件加载失败。IP: {ip}")
         return None
     try:
         region = _ip_searcher.search(ip)
@@ -109,9 +116,10 @@ def is_china_ip(ip):
             else:
                 return False
         else:
+            logging.warning(f"⚠️ IP查询失败：未找到IP信息。IP: {ip}")
             return None
     except Exception as e:
-        print(f"IP查询出错: {e}")
+        logging.error(f"❌ IP查询出错: {e}, IP: {ip}")
         return None
 
 
