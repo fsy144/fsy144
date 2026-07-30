@@ -212,7 +212,18 @@ def show_result():
         increment_scan_count(qr_id)
         return render_template('success.html', serial_no=data['serial_no'], scan_count=data['count'] + 1,
                                platform=platform, language=language)
-
+@app.before_first_request
+def initialize_app():
+    """
+    在每个工作进程处理第一个请求前调用。
+    确保每个工作进程都正确加载了IP数据库。
+    """
+    logging.info("工作进程启动，正在初始化应用...")
+    if not os.path.exists('database/anti_fake.db'):
+        logging.critical("错误：未找到数据库，请先运行 db_init.py")
+        # 这里不能直接退出进程，但后续请求会因数据库错误而失败
+    else:
+        init_ip_searcher()
 
 if __name__ == '__main__':
     if not os.path.exists('database/anti_fake.db'):
