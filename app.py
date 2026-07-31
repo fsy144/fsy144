@@ -245,10 +245,14 @@ def verify_start():
     else:  # 明确的境外用户
         status, data = check_qr_status(qr_id)
         log_scan(qr_id, user_ip, platform="境外用户")
+        # 境外用户没有“选择购买平台”的 POST 步骤，必须在此处递增；
+        # 否则 scan_count 永远为 0，永远不会触发重复扫码警告。
+        if status == 'success':
+            increment_scan_count(qr_id)
         return render_template(
             'success.html' if status == 'success' else ('warning.html' if status == 'warning' else 'failed.html'),
             serial_no=data['serial_no'] if data else None,
-            scan_count=data['count'] if data else None,
+            scan_count=(data['count'] + 1) if status == 'success' and data else (data['count'] if data else None),
             is_overseas=True,
             language='en'  # 境外用户强制英文
         )
