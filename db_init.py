@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS scan_logs (
     qr_id TEXT NOT NULL,
     ip_address TEXT NOT NULL,
     platform TEXT NOT NULL,
+    verification_result TEXT NOT NULL DEFAULT 'unknown',
     scan_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (qr_id) REFERENCES anti_fake_records(qr_id)
 )

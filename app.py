@@ -128,6 +128,21 @@ def get_db_connection():
     return conn
 
 
+def ensure_scan_logs_schema():
+    """安全地为已在线运行的旧数据库增加本次核验结果字段。"""
+    conn = get_db_connection()
+    try:
+        columns = {row['name'] for row in conn.execute('PRAGMA table_info(scan_logs)')}
+        if 'verification_result' not in columns:
+            conn.execute(
+                "ALTER TABLE scan_logs ADD COLUMN verification_result TEXT NOT NULL DEFAULT 'unknown'"
+            )
+            conn.commit()
+            logging.info("scan_logs 已新增 verification_result 字段；历史记录保留为 unknown")
+    finally:
+        conn.close()
+
+
 def check_qr_status(qr_id):
     """
     检查二维码状态（通用）
@@ -159,15 +174,16 @@ def increment_scan_count(qr_id):
     conn.close()
 
 
-def log_scan(qr_id, ip_address, platform="境外用户_无平台"):
+def log_scan(qr_id, ip_address, platform="境外用户_无平台", verification_result="unknown"):
     """
     记录扫码日志（兼容国内外）
     platform默认值设为"境外用户_无平台"
     """
     conn = get_db_connection()
     conn.execute(
-        'INSERT INTO scan_logs (qr_id, ip_address, platform) VALUES (?, ?, ?)',
-        (qr_id, ip_address, platform)
+        '''INSERT INTO scan_logs (qr_id, ip_address, platform, verification_result)
+           VALUES (?, ?, ?, ?)''',
+        (qr_id, ip_address, platform, verification_result)
     )
     conn.commit()
     conn.close()
@@ -244,7 +260,7 @@ def verify_start():
         return render_template('select_platform.html', qr_id=qr_id, language='zh')
     else:  # 明确的境外用户
         status, data = check_qr_status(qr_id)
-        log_scan(qr_id, user_ip, platform="境外用户")
+        log_scan(qr_id, user_ip, platform="境外用户", verification_result=status)
         # 境外用户没有“选择购买平台”的 POST 步骤，必须在此处递增；
         # 否则 scan_count 永远为 0，永远不会触发重复扫码警告。
         if status == 'success':
@@ -275,7 +291,7 @@ def show_result():
         return render_template('select_platform.html', qr_id=qr_id, error="请先选择购买平台", language=language)
 
     status, data = check_qr_status(qr_id)
-    log_scan(qr_id, user_ip, platform)
+    log_scan(qr_id, user_ip, platform, verification_result=status)
 
     if status == 'invalid':
         return render_template('failed.html', msg="该产品编码不存在，谨防假冒！", platform=platform, language=language)
@@ -297,6 +313,7 @@ def initialize_app():
         # 注意：这里不抛出异常，允许应用启动，但后续数据库操作会失败。
         # 这是一种更宽容的启动策略。
     else:
+        ensure_scan_logs_schema()
         init_ip_searcher()
 
 # 在模块加载时立即执行初始化
